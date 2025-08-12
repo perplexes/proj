@@ -5,7 +5,8 @@ def real(p): return os.path.realpath(p)
 
 def main():
     # Root + markers (customize via env)
-    root = real(os.environ.get("MONOREPO_ROOT", os.getcwd()))
+    git_root = subprocess.check_output(["git", "rev-parse", "--show-toplevel"]).decode("utf-8", "ignore").strip()
+    root = real(os.environ.get("MONOREPO_ROOT", git_root))
     markers = os.environ.get(
         "PROJECT_MARKERS",
         "package.json go.mod pyproject.toml Cargo.toml BUILD.bazel pom.xml setup.cfg",
