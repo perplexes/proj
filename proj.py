@@ -5,8 +5,20 @@ def real(p): return os.path.realpath(p)
 
 def main():
     # Root + markers (customize via env)
-    git_root = subprocess.check_output(["git", "rev-parse", "--show-toplevel"]).decode("utf-8", "ignore").strip()
-    root = real(os.environ.get("MONOREPO_ROOT", git_root))
+    git_root = None
+    try:
+        # Check if inside a git repo without printing errors
+        is_git_repo = subprocess.run(["git", "rev-parse", "--is-inside-work-tree"], check=True, capture_output=True, text=True).stdout.strip() == "true"
+        if is_git_repo:
+            git_root = subprocess.check_output(["git", "rev-parse", "--show-toplevel"]).decode("utf-8", "ignore").strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # Not a git repo or git is not installed
+        git_root = None
+    root = os.environ.get("MONOREPO_ROOT", git_root)
+    if not root:
+        print("Not in a git repository and MONOREPO_ROOT not set.", file=sys.stderr)
+        sys.exit(1)
+    root = real(root)
     markers = os.environ.get(
         "PROJECT_MARKERS",
         "package.json go.mod pyproject.toml Cargo.toml BUILD.bazel pom.xml setup.cfg",
